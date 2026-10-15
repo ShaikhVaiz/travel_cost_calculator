@@ -1,303 +1,287 @@
-import pandas as pd
-import streamlit as st
+"""
+India Tourist Cities Travel Cost Calculator
+Core computation engine for domestic travel planning across India.
+"""
+
 import os
-from datetime import datetime
+from datetime import datetime, date
+import pandas as pd
 
 
-def get_cities_by_state(df, state):
-    """
-    Returns a list of cities for the given state from the travel data
-    DataFrame.
-
-    Args:
-        travel_data_df (DataFrame): DataFrame containing travel data.
-        state (str): The state for which cities are being listed.
-
-    Returns:
-        list: A list of cities available in the specified state.
-    """
-    filtered_df = df[df['State'].str.lower(
-    ) == state.lower()]
-    cities_list = filtered_df['Destination'].unique().tolist()
-    return cities_list
+def get_data_dir() -> str:
+    """Returns the absolute path to the data directory."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, "data")
 
 
-def get_unique_states(df):
-    states = df['State'].fillna(
-        'Unknown').astype(str).unique().tolist()
-    states = sorted(states)
-    return ['Other'] + states
+def load_india_tourist_data(csv_path: str = None) -> pd.DataFrame:
+    """Load the Indian tourist cities dataset."""
+    if csv_path is None:
+        csv_path = os.path.join(get_data_dir(), "india_tourist_cities.csv")
+    
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"Tourist cities dataset not found at {csv_path}")
+        
+    df = pd.read_csv(csv_path)
+    # Ensure numeric columns are properly typed
+    numeric_cols = [
+        "Hotel_Budget_Night", "Hotel_Standard_Night", "Hotel_Luxury_Night",
+        "Food_Budget_Day", "Food_Standard_Day", "Food_Luxury_Day",
+        "Local_Transit_Budget_Day", "Local_Transit_Standard_Day", "Local_Transit_Luxury_Day",
+        "Sightseeing_Est_Daily"
+    ]
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    return df
 
 
-def verify_data_presence(value, data_type):
-    """Check if the necessary data is present and return appropriate messages or values."""
-    if value is None:
-        st.error(
-            f"No available {data_type}. Please select another nearest city or check your inputs.")
-        return None, True
-    return value, False
+def load_india_routes_data(csv_path: str = None) -> pd.DataFrame:
+    """Load route fare estimations between major hubs and tourist spots."""
+    if csv_path is None:
+        csv_path = os.path.join(get_data_dir(), "india_routes.csv")
+    
+    if os.path.exists(csv_path):
+        return pd.read_csv(csv_path)
+    return pd.DataFrame()
 
 
-def normalize_city_name(city_name, state_code):
-    return f"{city_name.lower().strip()}_{state_code.lower().strip()}"
+def get_unique_states(df: pd.DataFrame) -> list:
+    """Return sorted list of Indian states present in the dataset."""
+    if "State" not in df.columns:
+        return []
+    states = sorted(df["State"].dropna().unique().tolist())
+    return states
 
 
-def load_perdiem_data():
-    base_path = os.path.dirname(__file__)
-    data_path = os.path.join(base_path, '..', 'data')
-    perdiem_path = os.path.join(data_path, 'perdiem24.csv')
-    perdiem_df = pd.read_csv(perdiem_path)
-
-    perdiem_df = perdiem_df[perdiem_df['Destination'] != 'All']
-
-    current_year = datetime.now().year
-    perdiem_df['Season Begin'] = perdiem_df['Season Begin'].apply(
-        parse_season_date, default_year=current_year)
-    perdiem_df['Season End'] = perdiem_df['Season End'].apply(
-        parse_season_date, default_year=current_year)
-    perdiem_df['Normalized Destination'] = perdiem_df.apply(
-        lambda row: normalize_city_name(row['Destination'], row['State']), axis=1)
-
-    return perdiem_df
+def get_cities_by_state(df: pd.DataFrame, state: str) -> list:
+    """Return list of cities for a given Indian state."""
+    if "State" not in df.columns or "City" not in df.columns:
+        return []
+    filtered = df[df["State"].str.lower() == state.strip().lower()]
+    return sorted(filtered["City"].unique().tolist())
 
 
-def parse_season_date(date_str, default_year):
-    """Parse dates that only include the month and day by appending a default year."""
-    if isinstance(date_str, pd.Timestamp):
-        return date_str
-    if not isinstance(date_str, str) or pd.isna(date_str):
-        return pd.NaT
-    try:
-        return pd.to_datetime(f'{date_str.strip()} {default_year}', format='%B %d %Y')
-    except ValueError:
-        return pd.NaT
-
-
-def adjust_season_dates(row, event_start_date):
-    season_start = pd.to_datetime(row['Season Begin']).date(
-    ) if pd.notna(row['Season Begin']) else None
-    season_end = pd.to_datetime(row['Season End']).date(
-    ) if pd.notna(row['Season End']) else None
-
-    # If both season start and end are None, consider it year-round
-    if season_start is None and season_end is None:
-        return None, None
-
-    if season_start and season_end:
-        if season_start.month > season_end.month:
-            if event_start_date.month < season_start.month:
-                season_start = season_start.replace(
-                    year=event_start_date.year - 1)
-                season_end = season_end.replace(year=event_start_date.year)
-            else:
-                season_start = season_start.replace(year=event_start_date.year)
-                season_end = season_end.replace(year=event_start_date.year + 1)
-        else:
-            season_start = season_start.replace(year=event_start_date.year)
-            season_end = season_end.replace(year=event_start_date.year)
-
-    return season_start, season_end
-
-
-def get_full_state_name(abbreviation):
-    state_abbreviations_to_full = {
-        "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
-        "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District of Columbia",
-        "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
-        "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana",
-        "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
-        "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
-        "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
-        "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon",
-        "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota",
-        "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia",
-        "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"
-    }
-    return state_abbreviations_to_full.get(abbreviation.upper(), abbreviation)
-
-
-def retrieve_rates(city, state, start_date, end_date, df):
-    start_date_timestamp = pd.to_datetime(start_date)
-    end_date_timestamp = pd.to_datetime(end_date)
-    df['Normalized Destination'] = df.apply(
-        lambda row: normalize_city_name(row['Destination'], row['State']), axis=1)
-
-    filtered_df = df[(df['Normalized Destination'] ==
-                      normalize_city_name(city, state))]
-
-    for _, row in filtered_df.iterrows():
-        season_start, season_end = adjust_season_dates(
-            row, start_date_timestamp)
-
-        # If season start and end are None, consider it year-round
-        if season_start is None and season_end is None:
-            return row['FY24 Lodging Rate'], row['FY24 M&IE']
-
-        if season_start <= start_date_timestamp.date() <= season_end and season_start <= end_date_timestamp.date() <= season_end:
-            return row['FY24 Lodging Rate'], row['FY24 M&IE']
-
-    return None, None
-
-
-def load_ground_transport_data():
-    base_path = os.path.dirname(__file__)
-    data_path = os.path.join(base_path, '..', 'data')
-    csv_path = os.path.join(data_path, 'ground_transport_rates.csv')
-    ground_transport_df = pd.read_csv(csv_path)
-    return ground_transport_df
-
-
-def get_ground_transport_rate(ground_transport_df, city, state):
-    filtered_df = ground_transport_df[(ground_transport_df['City'].str.lower() == city.lower()) &
-                                      (ground_transport_df['State'].str.lower() == state.lower())]
-    if not filtered_df.empty:
-        return filtered_df.iloc[0]['Ground_Transport']
+def get_city_details(df: pd.DataFrame, city: str, state: str = None) -> dict:
+    """Get complete rate & info profile for a specific destination city."""
+    if state:
+        match = df[(df["City"].str.lower() == city.strip().lower()) & 
+                   (df["State"].str.lower() == state.strip().lower())]
     else:
-        default_df = ground_transport_df[(ground_transport_df['City'].str.lower() == 'other') &
-                                         (ground_transport_df['State'].str.lower() == state.lower())]
-        if not default_df.empty:
-            return default_df.iloc[0]['Ground_Transport']
-    return None
+        match = df[df["City"].str.lower() == city.strip().lower()]
+        
+    if match.empty:
+        return {}
+    return match.iloc[0].to_dict()
 
 
-def get_travel_details(city, state, start_date, end_date, perdiem_df, ground_transport_df):
-    full_state_name = get_full_state_name(state)
-    ground_transport_rate = get_ground_transport_rate(
-        ground_transport_df, city, full_state_name)
-    lodging_rate, mie_rate = retrieve_rates(
-        city, state, start_date, end_date, perdiem_df)
-
-    return lodging_rate, mie_rate, ground_transport_rate
-
-
-def clean_currency(value):
+def estimate_intercity_fare(origin: str, destination: str, travel_mode: str, routes_df: pd.DataFrame = None) -> tuple:
     """
-    Remove currency symbols and commas from a string and convert it to a float.
-
-    Args:
-        value (str): String value to clean.
-
-    Returns:
-        float: The numeric value of the input string.
+    Estimate round-trip intercity transport fare per traveler based on route and mode.
+    Returns: (one_way_fare, round_trip_fare, note)
     """
-    if value is None:
-        return 0.0
-    if isinstance(value, str):
-        value = value.replace('$', '').replace(',', '')
-    try:
-        return float(value)
-    except ValueError:
-        return 0.0
+    if routes_df is not None and not routes_df.empty:
+        # Match origin and destination
+        match = routes_df[(routes_df["Origin"].str.lower() == origin.strip().lower()) & 
+                          (routes_df["Destination"].str.lower().str.contains(destination.strip().lower()))]
+        if not match.empty:
+            row = match.iloc[0]
+            if "Flight" in travel_mode:
+                ow = row.get("Flight_Fare_OneWay", 0)
+                if ow > 0:
+                    return float(ow), float(ow * 2), "Route-specific airline average fare"
+            elif "Train 3AC" in travel_mode or "Vande Bharat" in travel_mode:
+                ow = row.get("Train_3AC_Fare_OneWay", 0)
+                if ow > 0:
+                    return float(ow), float(ow * 2), "Route-specific 3AC/Vande Bharat fare"
+            elif "Train Sleeper" in travel_mode:
+                ow = row.get("Train_3AC_Fare_OneWay", 0)
+                if ow > 0:
+                    sl_ow = max(250.0, float(ow * 0.45))
+                    return sl_ow, float(sl_ow * 2), "Route-specific Sleeper class fare"
+            elif "Bus" in travel_mode:
+                ow = row.get("Bus_Volvo_Fare_OneWay", 0)
+                if ow > 0:
+                    return float(ow), float(ow * 2), "Route-specific Volvo/AC sleeper bus fare"
+            elif "Car" in travel_mode or "Cab" in travel_mode:
+                total_car = row.get("Drive_Toll_Fuel_OneWay", 0)
+                if total_car > 0:
+                    return float(total_car), float(total_car * 2), "Round-trip driving fuel & toll cost for the vehicle"
 
-
-def calculate_travel_costs(start_date, end_date, num_staff, airfare_rate,
-                           lodging_rate, mie_rate,
-                           ground_transport_destination):
-    """
-    Calculate total travel costs based on input parameters.
-
-    Args:
-        start_date (datetime): The start date of travel.
-        end_date (datetime): The end date of travel.
-        num_staff (int): Number of staff members travelling.
-        airfare_rate (float): Cost of one-way airfare per staff member.
-        lodging_rate (float): Daily lodging rate.
-        mie_rate (float): Daily per diem rate.
-        ground_transport_destination (float): Total cost of ground transport
-        at the destination.
-
-    Returns:
-        dict: A dictionary containing detailed cost breakdown.
-    """
-    airfare_rate = clean_currency(airfare_rate)
-    lodging_rate = clean_currency(lodging_rate)
-    mie_rate = clean_currency(mie_rate)
-    ground_transport_destination = clean_currency(ground_transport_destination)
-
-    total_days = (end_date - start_date).days + 1
-    # Costs calculation
-    airfare_total = airfare_rate * 2  # Assuming round trip
-    hotel_total = total_days * lodging_rate  # Total lodging cost
-    first_and_last_per_diem_rate = mie_rate * \
-        0.75 * 2  # 75% for first and last days
-    per_diem_rate_in_between = mie_rate * \
-        (total_days - 1)  # Full rate for middle days
-    per_diem_total = first_and_last_per_diem_rate + per_diem_rate_in_between
-
-    total_cost_per_pax = airfare_total + hotel_total + \
-        per_diem_total + ground_transport_destination
-    total_budgeted_cost = total_cost_per_pax * num_staff
-
-    return {
-        "Airfare RT": int(airfare_total),
-        "Lodging rate": format(int(lodging_rate), ","),
-        "Hotel": format(int(hotel_total), ","),
-        "Total days": total_days + 1,
-        "Hotel nights": total_days,
-        "MIE rate": mie_rate,
-        "First/Last Day MIE": format(first_and_last_per_diem_rate, ".2f"),
-        "Middle Days MIE": format(per_diem_rate_in_between, ".2f"),
-        "Meals and incidentals": format(per_diem_total, ".2f"),
-        "Ground Transport Total": int(ground_transport_destination),
-        "Total per pax": f"{total_cost_per_pax:,.2f}",
-        "Number of pax": num_staff,
-        "Total budgeted travel cost": f"{total_budgeted_cost:,.2f}",
+    # Default heuristic estimates if specific route pair not in table
+    defaults = {
+        "Flight (Round Trip)": (4500.0, 9000.0, "Indicative domestic return airfare"),
+        "Train 3AC / Vande Bharat (Round Trip)": (1400.0, 2800.0, "Indicative round-trip 3AC/Chair Car fare"),
+        "Train Sleeper Class (Round Trip)": (550.0, 1100.0, "Indicative round-trip Sleeper fare"),
+        "AC Volvo Bus (Round Trip)": (1100.0, 2200.0, "Indicative return interstate Volvo bus fare"),
+        "Personal Car / Cab (Drive - Total Vehicle)": (4000.0, 8000.0, "Estimated vehicle fuel & highway tolls"),
+        "Self-Arranged / Local Arrival (₹0)": (0.0, 0.0, "Already at destination or arranged separately")
     }
+    
+    for key, val in defaults.items():
+        if travel_mode.split()[0] in key:
+            return val
+            
+    return (1500.0, 3000.0, "Standard domestic transport estimate")
 
 
-def create_budget_justification(travel_state, travel_city, start_date,
-                                end_date, num_staff, costs):
+def format_inr(amount: float) -> str:
+    """Format an amount into Indian Currency display (e.g. ₹1,25,000)."""
+    if pd.isna(amount) or amount is None:
+        return "₹0"
+    
+    amount = round(float(amount))
+    sign = "-" if amount < 0 else ""
+    amount_str = str(abs(amount))
+    
+    if len(amount_str) <= 3:
+        return f"{sign}₹{amount_str}"
+    
+    last3 = amount_str[-3:]
+    remaining = amount_str[:-3]
+    
+    # In Indian numbering, every 2 digits after the last 3 are grouped
+    parts = []
+    while len(remaining) > 2:
+        parts.insert(0, remaining[-2:])
+        remaining = remaining[:-2]
+    if remaining:
+        parts.insert(0, remaining)
+        
+    formatted = ",".join(parts) + "," + last3
+    return f"{sign}₹{formatted}"
+
+
+def calculate_trip_budget(
+    start_date,
+    end_date,
+    num_travelers: int,
+    rooms_needed: int,
+    travel_style: str,
+    intercity_fare_roundtrip: float,
+    intercity_mode: str,
+    hotel_rate_per_night: float,
+    food_rate_per_day_per_person: float,
+    local_transit_per_day: float,
+    sightseeing_per_day_per_person: float,
+    emergency_buffer_pct: float = 10.0
+) -> dict:
     """
-    Create a budget justification text based on travel details and calculated 
-    costs.
-
-    Args:
-        travel_state (str): The state of the destination.
-        travel_city (str): The city of the destination.
-        start_date (datetime): The start date of the travel.
-        end_date (datetime): The end date of the travel.
-        num_staff (int): The number of staff members traveling.
-        costs (dict): A dictionary containing all the calculated cost details.
-
-    Returns:
-        str: A formatted string of budget justification.
+    Calculate comprehensive trip budget for Indian domestic tourism.
     """
-    start_date_str = start_date.strftime("%m/%d/%Y")
-    end_date_str = end_date.strftime("%m/%d/%Y")
+    # Calculate days and nights
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+    elif isinstance(start_date, datetime):
+        start_date = start_date.date()
 
-    justification = (
-        f"Travel to {travel_city}, {travel_state} from {start_date_str} to {end_date_str} - "
-        f"Airfare round trip (${costs['Airfare RT']}); "
-        f"Lodging for {costs['Hotel nights']} nights x ${costs['Lodging rate']}/night (${costs['Hotel']}); "
-        f"Per Diem/meals for {costs['Total days']} days x ${costs['First/Last Day MIE']} "
-        f"for first day and last day, ${costs['Middle Days MIE']} for days in between "
-        f"(${costs['First/Last Day MIE']} + ${costs['Middle Days MIE']} = ${costs['Meals and incidentals']}); "
-        f"Ground Transport to and from airport for ${costs['Ground Transport Total']} trip/person in {travel_city} "
-        f"= ${costs['Total per pax']} x {num_staff} staff = ${costs['Total budgeted travel cost']}"
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+    elif isinstance(end_date, datetime):
+        end_date = end_date.date()
+
+    total_days = max(1, (end_date - start_date).days + 1)
+    hotel_nights = max(1, (end_date - start_date).days) if total_days > 1 else 1
+
+    # Intercity transport
+    is_vehicle_flat = "Car" in intercity_mode or "Cab" in intercity_mode
+    if is_vehicle_flat:
+        intercity_total = float(intercity_fare_roundtrip)
+    else:
+        intercity_total = float(intercity_fare_roundtrip) * num_travelers
+
+    # Lodging
+    hotel_total = hotel_nights * max(1, rooms_needed) * float(hotel_rate_per_night)
+
+    # Food & Dining
+    food_total = total_days * num_travelers * float(food_rate_per_day_per_person)
+
+    # Local Sightseeing & Commute
+    local_transit_total = total_days * float(local_transit_per_day)
+
+    # Monument & Activity entry charges
+    sightseeing_total = total_days * num_travelers * float(sightseeing_per_day_per_person)
+
+    # Subtotal
+    subtotal = (
+        intercity_total +
+        hotel_total +
+        food_total +
+        local_transit_total +
+        sightseeing_total
     )
 
-    return justification
+    # Contingency buffer
+    emergency_buffer = subtotal * (max(0.0, float(emergency_buffer_pct)) / 100.0)
+    grand_total = subtotal + emergency_buffer
+
+    cost_per_person = grand_total / max(1, num_travelers)
+    cost_per_day = grand_total / total_days
+
+    return {
+        "total_days": total_days,
+        "hotel_nights": hotel_nights,
+        "num_travelers": num_travelers,
+        "rooms_needed": rooms_needed,
+        "travel_style": travel_style,
+        "intercity_mode": intercity_mode,
+        "intercity_total": intercity_total,
+        "hotel_total": hotel_total,
+        "food_total": food_total,
+        "local_transit_total": local_transit_total,
+        "sightseeing_total": sightseeing_total,
+        "subtotal": subtotal,
+        "emergency_buffer": emergency_buffer,
+        "grand_total": grand_total,
+        "cost_per_person": cost_per_person,
+        "cost_per_day": cost_per_day,
+        # Formatted string representations
+        "fmt_intercity_total": format_inr(intercity_total),
+        "fmt_hotel_total": format_inr(hotel_total),
+        "fmt_food_total": format_inr(food_total),
+        "fmt_local_transit_total": format_inr(local_transit_total),
+        "fmt_sightseeing_total": format_inr(sightseeing_total),
+        "fmt_subtotal": format_inr(subtotal),
+        "fmt_emergency_buffer": format_inr(emergency_buffer),
+        "fmt_grand_total": format_inr(grand_total),
+        "fmt_cost_per_person": format_inr(cost_per_person),
+        "fmt_cost_per_day": format_inr(cost_per_day),
+    }
 
 
-if __name__ == "__main__":
-    perdiem_df, standard_rate = load_perdiem_data()
-    ground_transport_df = load_ground_transport_data()
-    city = "Denver"
-    state = "CO"
-    start_date = '10/01/2024'
-    end_date = '10/05/2024'
-    airfare_rate = 300
-    num_staff = 2
+def generate_trip_summary_text(
+    city: str,
+    state: str,
+    start_date: date,
+    end_date: date,
+    costs: dict
+) -> str:
+    """Generates an organized, readable text summary for copy-pasting or reporting."""
+    summary = f"""======================================================
+🇮🇳 INDIA TRIP BUDGET PLANNER SUMMARY
+======================================================
+Destination   : {city}, {state}
+Travel Period : {start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')} ({costs['total_days']} Days / {costs['hotel_nights']} Nights)
+Travelers     : {costs['num_travelers']} Person(s) | {costs['rooms_needed']} Room(s)
+Trip Style    : {costs['travel_style']}
+Travel Mode   : {costs['intercity_mode']}
 
-    lodging_rate, mie_rate, ground_transport_rate = get_travel_details(
-        city, state, start_date, end_date, perdiem_df, ground_transport_df)
-
-    print(
-        f"Lodging Rate: {lodging_rate}, M&IE: {mie_rate}, Ground Transport Rate: {ground_transport_rate}")
-
-    costs = calculate_travel_costs(start_date, end_date, num_staff, airfare_rate,
-                                   lodging_rate, mie_rate,
-                                   ground_transport_rate)
-
-    print(create_budget_justification(state, city, start_date,
-                                      end_date, num_staff, costs))
+------------------------------------------------------
+💰 ITEMIZED ESTIMATE BREAKDOWN:
+------------------------------------------------------
+1. Inter-city Travel (Round Trip) : {costs['fmt_intercity_total']}
+2. Accommodation ({costs['hotel_nights']} Nights)      : {costs['fmt_hotel_total']}
+3. Meals & Dining ({costs['total_days']} Days)         : {costs['fmt_food_total']}
+4. Local Sightseeing & Commute    : {costs['fmt_local_transit_total']}
+5. Activities & Monument Passes   : {costs['fmt_sightseeing_total']}
+------------------------------------------------------
+Subtotal Cost                     : {costs['fmt_subtotal']}
+Contingency & Emergency Buffer    : {costs['fmt_emergency_buffer']}
+======================================================
+TOTAL ESTIMATED BUDGET            : {costs['fmt_grand_total']}
+Cost Per Person                   : {costs['fmt_cost_per_person']}
+Daily Average Spend               : {costs['fmt_cost_per_day']}
+======================================================
+* Generated with India Tourist City Travel Calculator & AI Planner
+"""
+    return summary

@@ -1,75 +1,102 @@
-# Travel Cost Calculator
+# 🇮🇳 Bharat Yatra: India Tourist Cities Travel Cost Calculator & AI Planner
 
-## Introduction
+A complete domestic Indian travel web platform featuring **User Authentication**, a personal **Travel Dashboard**, **Trip Cost Calculator** in Indian Rupee (**₹ INR**), **AI Day-by-Day Itineraries**, and **YatraAI: 24/7 AI Travel Copilot**.
 
-The Travel Cost Calculator is a web-based application designed to help users estimate the costs associated with official travel. Utilizing the General Services Administration (GSA) per diem rates and airfare data for FY24, this tool simplifies the process of planning and budgeting for travel expenses, ensuring compliance with government travel policies.
+---
 
-## Key Features
+## 🌟 Key Platform Features
 
-- **State and City Selection**: Choose both origin and destination from a comprehensive list of states and cities.
-- **Travel Dates and Number of Travelers**: Input the duration of the trip and how many people are traveling.
-- **Cost Calculation**: Automatically calculates expenses for airfare, lodging, per diem, and transportation.
-- **Budget Justification**: Generates detailed budget justifications suitable for expense reporting and grant applications.
+1. **🔐 Authentication & User Accounts**:
+   - **Sign Up**: Create an account with full name, email, and secure hashed password.
+   - **Sign In**: Log into your personal account (or use the 1-Click Demo Account: `demo@yatra.com` / `demo123`).
+   - **Forgot Password with OTP**: 6-digit OTP verification delivered directly to your email via the **Resend API**.
 
-## Built With
+2. **📊 Personal User Dashboard**:
+   - Track planned trips and total estimated travel budget.
+   - Save estimated trips with one click from the calculator.
+   - View, review, or delete trip estimates anytime.
 
-- Python - Primary programming language
-- Streamlit - Framework used to create the web application
-- Pandas - Used for data manipulation and analysis
+3. **🧮 45+ Indian Destinations Budget Calculator**:
+   - Accurate baseline rates for 45+ tourist cities across all zones in India.
+   - **Inter-city Transit**: Flights, Trains (3AC / Vande Bharat / Sleeper), AC Volvo Buses, or Personal Drive with automatic fare estimation.
+   - **Customizable Daily Rates**: Auto-fills realistic rates for Budget, Standard, and Luxury tiers with an optional fine-tuning expander.
+   - **Visual Breakdown**: Interactive bar chart and itemized table with exportable WhatsApp/Email summary.
 
-## Getting Started
+4. **🤖 Dual-Engine AI Integration**:
+   - **Google Gemini Generative AI**: Connect your free Gemini API key in Settings for live dynamic itineraries and deep travel advice.
+   - **Built-in Smart Offline AI**: If no API key is set, the app seamlessly uses a built-in intelligent engine with local tourist attraction databases, food recommendations, and budget-saving hacks—**100% free with zero configuration**.
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+5. **💬 24/7 YatraAI Travel Copilot (Chatbot)**:
+   - Ask travel questions anytime: packing checklists, safety for solo travelers, local street food hygiene, and market bargaining hacks.
 
-### Prerequisites
+---
 
-Before running the project, ensure you have the following installed:
-- Python 3.8 or higher
-- pip
+## 📂 Project Architecture
 
-### Installation
-
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/nelkalm/travel_cost_calculator.git
-   ```
-2. Navigate to the project directory:
-   ```sh
-   cd travel_cost_calculator
-   ```
-3. Install the required packages:
-   ```sh
-   pip install -r requirements.txt
-   ```
-
-### Running the Application
-
-Execute the following command in the project directory:
-```sh
-streamlit run app.py
+```text
+travel_cost_calculator/
+├── .streamlit/
+│   └── config.toml                # Modern UI theme & server settings
+├── data/
+│   ├── india_tourist_cities.csv   # Comprehensive database of 45+ Indian tourist cities
+│   └── india_routes.csv           # Indicative inter-city transport fares and distances
+├── src/
+│   ├── app.py                     # Main application platform (Dashboard, Auth, Calculator)
+│   ├── auth.py                    # SQLite database, user accounts, and Resend OTP delivery
+│   ├── travel_calculator.py       # Core budget calculation engine & INR formatting
+│   ├── ai_planner.py              # AI itinerary generator & YatraAI travel copilot
+│   └── data.py                    # Constants, hubs, states, and travel styles
+├── tests/
+│   └── test_calculator.py         # Automated unit tests (pytest)
+├── app.py                         # Root entrypoint wrapper
+├── Dockerfile                     # Production container image setup
+├── .dockerignore
+├── requirements.txt               # Dependencies (streamlit, pandas, google-genai, resend, pytest)
+└── README.md                      # Documentation & deployment guide
 ```
-This will start the Streamlit web server and the application will be accessible via your web browser at `localhost:8501`.
 
-## Usage
+---
 
-After launching the application, use the interface to:
-- Select the origin and destination locations.
-- Choose the travel dates.
-- Enter the number of staff traveling.
-- Click on 'Calculate Travel Costs' to view the estimated expenses.
+## 🚀 How to Run Locally
 
-## Contributing
+Run the app using Python 3.14:
 
-Contributions to enhance the functionality or efficiency of the Travel Cost Calculator are welcome. Please fork the repository and create a pull request with your features or fixes.
+```powershell
+# 1. Install dependencies (resend, streamlit, pandas, google-genai)
+python -m pip install -r requirements.txt
 
-## License
+# 2. Launch the Web Platform
+python -m streamlit run app.py
+```
+*The app will automatically open in your default browser at `http://localhost:8501`.*
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
 
-## Acknowledgments
+## 🔑 Adding API Keys (Gemini & Resend)
 
-- GSA Per Diem Rates
-- GSA Airfare Database
-- Streamlit Documentation
+You can provide API keys directly inside the app:
+1. Navigate to **⚙️ API Settings** in the sidebar.
+2. Enter your **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com/)).
+3. Enter your **Resend API Key** (from [Resend.com](https://resend.com/)).
+4. Click **Save**!
 
-Feel free to explore the app and use it to plan your travel more effectively!
+> **Note:** If no keys are entered, the app still works! It uses the built-in smart AI fallback for itineraries, and shows a test code for password reset OTPs.
+
+---
+
+## 🌐 How to Deploy (Step-by-Step on Streamlit Cloud)
+
+1. **Push your code to your GitHub repo**:
+   ```bash
+   git add .
+   git commit -m "feat: complete web dashboard with auth, resend otp, and ai travel planner"
+   git push origin main
+   ```
+2. Go to **[share.streamlit.io](https://share.streamlit.io/)** and sign in with GitHub.
+3. Click **"New app"** -> select your repo -> set file path to `app.py`.
+4. Under **Advanced settings -> Secrets**, add:
+   ```toml
+   GEMINI_API_KEY = "your-gemini-key"
+   RESEND_API_KEY = "your-resend-key"
+   ```
+5. Click **Deploy!** Your full web platform is live in under 2 minutes.

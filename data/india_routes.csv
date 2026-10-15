@@ -1,0 +1,57 @@
+Origin,Destination,Approx_Distance_Km,Flight_Fare_OneWay,Train_3AC_Fare_OneWay,Bus_Volvo_Fare_OneWay,Drive_Toll_Fuel_OneWay
+Delhi,Jaipur,280,2500,750,600,2800
+Delhi,Agra,230,0,550,450,2200
+Delhi,Varanasi,820,4200,1350,1100,7500
+Delhi,Manali,540,6500,1200,1100,5500
+Delhi,Shimla,350,4500,850,750,3800
+Delhi,Rishikesh,240,0,600,500,2400
+Delhi,Amritsar,450,3500,950,800,4500
+Delhi,Srinagar,810,5500,1600,0,9000
+Delhi,Goa,1900,5200,2100,0,18000
+Delhi,Mumbai,1420,4800,1800,1600,14000
+Delhi,Udaipur,660,3800,1150,950,6500
+Delhi,Bengaluru,2170,5800,2400,0,21000
+Mumbai,Goa,590,3200,1100,900,5800
+Mumbai,Jaipur,1150,4500,1500,1300,11000
+Mumbai,Udaipur,760,3900,1250,1050,7500
+Mumbai,Lonavala & Khandala,85,0,250,200,1200
+Mumbai,Mahabaleshwar,260,0,600,500,2800
+Mumbai,Delhi,1420,4800,1800,1600,14000
+Mumbai,Bengaluru,980,3600,1450,1200,9500
+Mumbai,Kochi,1380,4200,1750,0,13500
+Mumbai,Varanasi,1500,5200,1850,0,15000
+Bengaluru,Goa,560,3400,1150,900,5500
+Bengaluru,Coorg (Madikeri),250,0,500,450,2600
+Bengaluru,Mysore,145,0,350,250,1600
+Bengaluru,Ooty,270,0,600,550,2900
+Bengaluru,Kodaikanal,460,0,950,850,4800
+Bengaluru,Munnar,475,0,950,850,5000
+Bengaluru,Kochi,535,3200,1100,900,5500
+Bengaluru,Hampi,340,0,750,650,3600
+Bengaluru,Pondicherry,310,0,700,600,3200
+Bengaluru,Delhi,2170,5800,2400,0,21000
+Bengaluru,Mumbai,980,3600,1450,1200,9500
+Kolkata,Darjeeling,615,3500,1150,950,6200
+Kolkata,Puri,500,0,900,750,5200
+Kolkata,Varanasi,680,3800,1150,950,6800
+Kolkata,Gangtok,670,3800,1250,1050,7000
+Kolkata,Shillong,1080,4200,1650,0,11000
+Kolkata,Delhi,1500,4800,1850,0,15000
+Chennai,Pondicherry,150,0,300,250,1600
+Chennai,Ooty,540,0,1100,900,5600
+Chennai,Kodaikanal,520,0,1050,850,5400
+Chennai,Munnar,580,0,1150,950,6000
+Chennai,Bengaluru,350,2800,750,600,3600
+Chennai,Goa,910,4200,1450,1200,9200
+Hyderabad,Goa,650,3800,1200,1000,6800
+Hyderabad,Bengaluru,570,3200,1100,900,5800
+Hyderabad,Hampi,380,0,800,650,3900
+Hyderabad,Delhi,1580,4800,1850,0,15500
+Ahmedabad,Udaipur,260,0,550,450,2600
+Ahmedabad,Jaipur,650,3400,1100,900,6600
+Ahmedabad,Rann of Kutch,400,0,800,700,4200
+Ahmedabad,Statue of Unity (Kevadia),200,0,450,350,2100
+Ahmedabad,Goa,1100,4200,1500,1300,11000
+Pune,Goa,450,3200,950,800,4600
+Pune,Mahabaleshwar,120,0,300,250,1400
+Pune,Lonavala & Khandala,65,0,200,150,900
