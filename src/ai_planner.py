@@ -177,20 +177,116 @@ def generate_ai_budget_tips(city, travel_style, intercity_mode, grand_total, api
 
 def ask_ai_travel_copilot(
     query: str,
-    current_trip_context: Optional[str] = None,
+    current_trip_context: Optional[Any] = None,
     api_key: Optional[str] = None
 ) -> str:
-    """Fast response travel assistant."""
+    """
+    Intelligent, context-aware travel copilot.
+    Dynamically answers questions about the traveler's selected trip, departure hub, budget,
+    attractions, food, safety, packing, and routes using live Gemini AI with rich dynamic fallback.
+    """
+    # Extract rich trip details if provided as dict or string
+    origin = "Delhi NCR"
+    city = "Jaipur"
+    state = "Rajasthan"
+    days = 4
+    travelers = 2
+    style = "Standard / Family"
+    mode = "Train"
+    total_cost = "₹24,800"
+    cost_per_person = "₹12,400"
+    city_info = {}
+
+    if isinstance(current_trip_context, dict):
+        origin = current_trip_context.get("origin", origin)
+        city = current_trip_context.get("city", city)
+        state = current_trip_context.get("state", state)
+        days = current_trip_context.get("days", days)
+        travelers = current_trip_context.get("travelers", travelers)
+        style = current_trip_context.get("style", style)
+        mode = current_trip_context.get("mode", mode)
+        total_cost = current_trip_context.get("total_cost", total_cost)
+        cost_per_person = current_trip_context.get("cost_per_person", cost_per_person)
+        city_info = current_trip_context.get("city_info", {}) or {}
+    elif isinstance(current_trip_context, str):
+        # Fallback parse from context string if needed
+        pass
+
+    q = query.strip().lower()
+
+    # 1. Direct Context Queries (Instant & 100% Accurate)
+    if any(k in q for k in ["departure", "origin", "leaving from", "from where", "starting city", "hub"]):
+        return (
+            f"✈️ **Departure Details:**\n\n"
+            f"- **Departure Hub:** **{origin}**\n"
+            f"- **Destination:** **{city}, {state}**\n"
+            f"- **Travel Mode:** {mode}\n\n"
+            f"You are currently planning a journey starting from **{origin}** to **{city}**."
+        )
+
+    if any(k in q for k in ["what trip", "which trip", "selected trip", "my trip", "where am i going", "destination"]):
+        return (
+            f"📍 **Your Current Trip Overview:**\n\n"
+            f"- **Destination:** **{city}, {state}**\n"
+            f"- **Departure From:** **{origin}**\n"
+            f"- **Duration:** **{days} Days**\n"
+            f"- **Travelers:** **{travelers} Person(s)**\n"
+            f"- **Travel Style:** {style}\n"
+            f"- **Transport:** {mode}\n"
+            f"- **Total Estimated Budget:** **{total_cost}** ({cost_per_person} per person)"
+        )
+
+    if any(k in q for k in ["budget", "cost", "how much", "price", "expense", "spend"]):
+        return (
+            f"💰 **Estimated Budget Breakdown for {city}:**\n\n"
+            f"- **Total Trip Cost:** **{total_cost}**\n"
+            f"- **Cost Per Person:** **{cost_per_person}** (for {travelers} travelers)\n"
+            f"- **Duration:** {days} Days\n"
+            f"- **Travel Style:** {style}\n"
+            f"- **Intercity Transit:** {mode} from {origin}\n\n"
+            f"💡 *Tip:* Check the **Trip Calculator** tab for the itemized breakdown (Hotels, Meals, Commute, Monument passes)."
+        )
+
+    if any(k in q for k in ["food", "dish", "dishes", "eat", "cuisine", "street food"]):
+        foods = city_info.get("Top_Foods", "Regional Thali, Street Food Delicacies, Traditional Sweets")
+        return (
+            f"🍛 **Culinary Specialties in {city}, {state}:**\n\n"
+            f"- **Must-Try Delicacies:** {foods}\n"
+            f"- **Where to Eat:** Look for busy local family eateries with high food turnover for maximum taste and hygiene.\n"
+            f"- **Hygiene Tip:** Always drink packaged mineral water (Bisleri/Kinley) and enjoy hot, freshly made street foods."
+        )
+
+    if any(k in q for k in ["attraction", "visit", "see", "monument", "places", "spot", "sightseeing"]):
+        spots = city_info.get("Key_Attractions", f"Iconic monuments and heritage spots in {city}")
+        tip = city_info.get("Pro_Tip", "Book tickets online in advance.")
+        return (
+            f"🌟 **Top Places to Visit in {city}:**\n\n"
+            f"- **Key Attractions:** {spots}\n"
+            f"- **Insider Tip:** {tip}\n"
+            f"- Head to the **AI Smart Itinerary** tab to get a morning-to-evening day-by-day plan for all these spots!"
+        )
+
+    if any(k in q for k in ["when", "time", "month", "season", "weather"]):
+        months = city_info.get("Best_Months", "October to March")
+        return (
+            f"🌤️ **Best Season to Visit {city}, {state}:**\n\n"
+            f"- **Peak Season:** **{months}** (pleasant weather, ideal for sightseeing).\n"
+            f"- **Tip:** If traveling during peak months, book trains and hotel rooms 3-4 weeks in advance to avoid surge pricing."
+        )
+
+    # 2. Try Live Gemini Generation for other questions
     client = get_gemini_client(api_key)
     if client:
         try:
-            context_str = f"Context: {current_trip_context}\n" if current_trip_context else ""
             prompt = f"""
-You are YatraAI, an expert Indian travel assistant.
-{context_str}
-Query: "{query}"
+You are YatraAI, an expert Indian travel copilot.
+Context:
+- User is planning a {days}-day trip to {city}, {state} from {origin}.
+- Travelers: {travelers} | Style: {style} | Travel Mode: {mode} | Budget: {total_cost}
 
-Answer in 3-4 bullet points. Be concise, actionable, and practical for Indian domestic travel realities (costs in ₹, safety, tips).
+User Question: "{query}"
+
+Answer directly, accurately, and concisely in 2-4 bullet points tailored specifically to {city} and India travel realities.
 """
             res = client.models.generate_content(
                 model="gemini-3.8-flash",
@@ -200,30 +296,38 @@ Answer in 3-4 bullet points. Be concise, actionable, and practical for Indian do
             if res and res.text:
                 return res.text
         except Exception as e:
-            print(f"Gemini Copilot fallback: {e}")
+            print(f"Gemini Copilot API call notice: {e}")
 
-    # Instant heuristic fallback
-    q = query.lower()
+    # 3. Dynamic Fallbacks for General Topics
     if any(k in q for k in ["safe", "safety", "women", "solo"]):
         return (
-            "🛡️ **Safety Essentials for Traveling in India:**\n\n"
-            "- **Transport:** Use app cabs (Uber/Ola) or prepaid taxi counters at stations/airports.\n"
-            "- **Helpline Numbers:** Keep `112` (National Emergency) and `1091` (Women's Helpline) handy.\n"
-            "- **Neighborhoods:** Stay in central, well-reviewed hotels rather than isolated outskirts.\n"
-            "- **Connectivity:** Ensure your SIM (Jio/Airtel) has active 4G/5G data for maps and emergency contacts."
+            f"🛡️ **Safety Guidelines for {city}, {state}:**\n\n"
+            f"- **Transit:** Use verified app cabs (Uber/Ola) or prepaid taxi counters when arriving from {origin}.\n"
+            f"- **Helpline:** National Emergency is `112` and Women's Helpline is `1091`.\n"
+            f"- **Accommodations:** Choose centrally located hotels in well-lit areas with verified reviews.\n"
+            f"- **Data Connectivity:** Ensure active 4G/5G data (Jio/Airtel) for real-time maps and navigation."
         )
     elif any(k in q for k in ["pack", "packing", "clothes"]):
+        is_hills = any(h in state.lower() or h in city.lower() for h in ["himachal", "uttarakhand", "kashmir", "ladakh", "shimla", "manali", "ooty", "darjeeling"])
+        clothing_tip = "Warm thermals, jacket, and comfortable walking shoes" if is_hills else "Breathable cotton clothes and comfortable footwear"
         return (
-            "🎒 **Packing Checklist:**\n\n"
-            "- **Attire:** Breathable cotton clothes for plains/beaches; thermals and windcheater for hill stations.\n"
-            "- **Temple Visits:** Modest clothing covering shoulders and knees; slip-on shoes for easy removal.\n"
-            "- **Gadgets:** 10,000+ mAh power bank and standard Type C/D chargers.\n"
-            "- **Health Kit:** ORS sachets, digestive tablets, motion sickness pills, and mosquito repellent."
+            f"🎒 **Packing Essentials for {city}:**\n\n"
+            f"- **Clothing:** {clothing_tip}.\n"
+            f"- **Temple Etiquette:** Modest attire covering shoulders and knees; easy slip-on shoes.\n"
+            f"- **Tech & Power:** A reliable 10,000+ mAh power bank for photos and navigation on the go.\n"
+            f"- **Medical Kit:** Antacids, ORS hydration sachets, and motion-sickness tablets if traversing winding mountain routes."
         )
-    else:
+    elif any(k in q for k in ["bargain", "shopping", "price", "market"]):
         return (
-            f"🇮🇳 **Travel Tip for {query}:**\n\n"
-            f"- **Early Starts:** Most palaces, forts, and viewpoints open around 8:30 AM. Visiting early avoids crowds and heat.\n"
-            f"- **Online Passes:** Book tickets on the official ASI portal to get a 10% discount.\n"
-            f"- **Cashless Travel:** UPI (GPay/PhonePe) is accepted across virtually all shops and stalls."
+            f"🛍️ **Bargaining & Shopping Tips in {city}:**\n\n"
+            f"- **Local Bazaars:** Politely start your counter-offer around 50-60% of the initial vendor quote.\n"
+            f"- **Fixed Price Options:** For certified silk, tea, or handicrafts, visit state-run government emporiums.\n"
+            f"- **Cashless:** UPI (PhonePe, GPay, Paytm) is widely accepted in {city} across shops and street stalls."
         )
+
+    return (
+        f"🌿 **YatraAI Travel Insights for {city}, {state}:**\n\n"
+        f"- Regarding **\"{query}\"**: For your {days}-day trip to {city} from {origin}, plan your morning outings between 8:30 AM – 11:30 AM to beat afternoon heat and peak crowds.\n"
+        f"- **Monument Passes:** Book official tickets online on the ASI portal for instant entry and a 10% discount.\n"
+        f"- Check the **AI Smart Itinerary** tab above to see your customized day-by-day sightseeing plan!"
+    )

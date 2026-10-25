@@ -258,13 +258,6 @@ def view_login():
             st.session_state["nav_page"] = "📝 Create Account"
             st.rerun()
 
-        st.markdown("---")
-        st.markdown("**⚡ Quick Test?**")
-        if st.button("🚀 1-Click Demo Login (Amaan Demo)", use_container_width=True):
-            st.session_state["user"] = {"id": 1, "name": "Amaan Demo", "email": "demo@yatra.com"}
-            st.session_state["nav_page"] = "📊 Dashboard"
-            st.rerun()
-
 
 # =====================================================================
 # VIEW: SIGN UP
@@ -700,8 +693,19 @@ def view_ai_studio():
 
             with st.chat_message("assistant"):
                 with st.spinner("Thinking..."):
-                    context = f"Destination: {dest_city}, {dest_state}. Duration: {days} days. Style: {style}."
-                    reply = ask_ai_travel_copilot(user_query, context, api_key=api_key)
+                    trip_ctx = {
+                        "origin": meta.get("origin", "Delhi NCR"),
+                        "city": dest_city,
+                        "state": dest_state,
+                        "days": days,
+                        "travelers": travelers,
+                        "style": style,
+                        "mode": res.get("intercity_mode", "Train"),
+                        "total_cost": res.get("fmt_grand_total", "N/A"),
+                        "cost_per_person": res.get("fmt_cost_per_person", "N/A"),
+                        "city_info": city_info
+                    }
+                    reply = ask_ai_travel_copilot(user_query, trip_ctx, api_key=api_key)
                     st.markdown(reply)
                     st.session_state["copilot_messages"].append({"role": "assistant", "content": reply})
 
