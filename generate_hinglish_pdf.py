@@ -1,6 +1,7 @@
 """
 Script to generate a comprehensive, publication-quality Project Synopsis PDF in Hinglish
 for Bharat Yatra: India Tourist Cities Travel Cost Calculator & AI Planner.
+Includes dedicated Frontend vs Backend Architecture & Data Flow Breakdown.
 """
 
 import os
@@ -37,7 +38,7 @@ class NumberedCanvas(canvas.Canvas):
         
         # Running header (pages > 1)
         if self._pageNumber > 1:
-            self.drawString(54, letter[1] - 36, "Bharat Yatra — Project Synopsis (Hinglish Guide & Architecture)")
+            self.drawString(54, letter[1] - 36, "Bharat Yatra — Project Synopsis & Technical Architecture (Hinglish)")
             self.setStrokeColor(colors.HexColor("#D8E2DC"))
             self.setLineWidth(0.5)
             self.line(54, letter[1] - 42, letter[0] - 54, letter[1] - 42)
@@ -102,7 +103,7 @@ def build_hinglish_pdf(filename: str):
         fontSize=13,
         leading=17,
         textColor=C_PRIMARY,
-        spaceBefore=12,
+        spaceBefore=11,
         spaceAfter=6,
         keepWithNext=True
     )
@@ -114,8 +115,8 @@ def build_hinglish_pdf(filename: str):
         fontSize=10.5,
         leading=14,
         textColor=C_SECONDARY,
-        spaceBefore=8,
-        spaceAfter=4,
+        spaceBefore=7,
+        spaceAfter=3,
         keepWithNext=True
     )
 
@@ -179,6 +180,16 @@ def build_hinglish_pdf(filename: str):
         spaceAfter=6
     )
 
+    qa_box_style = ParagraphStyle(
+        'QABox',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=12,
+        textColor=C_TEXT_DARK,
+        spaceAfter=4
+    )
+
     story = []
 
     # ==================== COVER / HEADER BANNER ====================
@@ -223,27 +234,80 @@ def build_hinglish_pdf(filename: str):
         body_style
     ))
 
-    # ==================== SECTION 2: KEY MODULES & CAPABILITIES ====================
+    # ==================== SECTION 2: FRONTEND VS BACKEND DEEP DIVE ====================
     story.append(Spacer(1, 4))
-    story.append(Paragraph("2. Core Modules & Key Features (Project ke Main Features)", h1_style))
+    story.append(Paragraph("2. Frontend vs Backend Complete Architecture Breakdown", h1_style))
+    story.append(Paragraph(
+        "Project ka architecture do primary layers me cleanly separated hai: <b>Frontend (UI / UX Layer)</b> jo user interaction handle karta hai, aur <b>Backend (Business Logic, Security, Data & AI Layer)</b> jo computational aur storage operations manage karta hai.",
+        body_style
+    ))
 
-    story.append(Paragraph("A. User Authentication & Password Security (SQLite + SHA-256 + Resend OTP)", h2_style))
-    story.append(Paragraph("• <b>User Registration & Login:</b> Har user apna secure account create kar sakta hai. Passwords ko plain-text me store nahi kiya jata; Python <code>hashlib</code> ke through unique random salt aur SHA-256 cryptographic hashing use hoti hai.", bullet_style))
-    story.append(Paragraph("• <b>Forgot Password via Email OTP:</b> Agar user password bhool jata hai, toh <b>Resend REST API</b> ke zariye user ke verified email par 6-digit dynamic OTP bheja jata hai. SQLite me 10-minute expiry window aur single-use verification logic implement kiya gaya hai.", bullet_style))
+    story.append(Paragraph("A. Frontend Layer (User Interface & Experience)", h2_style))
+    story.append(Paragraph("• <b>UI Framework:</b> <b>Streamlit</b> (Python-based modern reactive web UI framework) jo without heavy JS setup ke clean, fast web interfaces render karta hai.", bullet_style))
+    story.append(Paragraph("• <b>Custom Design System & Styling:</b> Streamlit me custom CSS injection ke zariye <b>Nature-Toned Modern Palette</b> create kiya gaya hai (Deep Forest Green <code>#1B4332</code>, Sage Green <code>#2D6A4F</code>, Mint <code>#52B788</code>, aur Warm Sand cards).", bullet_style))
+    story.append(Paragraph("• <b>Core UI Screens:</b>", bullet_style))
+    story.append(Paragraph("&nbsp;&nbsp;&nbsp;&nbsp;1. <i>Authentication Portal:</i> Clean Login, Sign Up, aur Forgot Password OTP input forms.<br/>"
+                           "&nbsp;&nbsp;&nbsp;&nbsp;2. <i>Cost Calculator Dashboard:</i> Dropdowns (Origin, Destination), Date Pickers, Number Inputs (Travelers, Nights), Budget Tier Radio Buttons.<br/>"
+                           "&nbsp;&nbsp;&nbsp;&nbsp;3. <i>Visual KPI Cards:</i> Color-coded metric tiles showing Lodging, Food, Transit, Local Cab, Sightseeing, aur Emergency Buffer.<br/>"
+                           "&nbsp;&nbsp;&nbsp;&nbsp;4. <i>AI Travel Studio Chat:</i> Interactive real-time chat interface (<code>st.chat_message</code>, <code>st.chat_input</code>) Copilot ke sath converse karne ke liye.<br/>"
+                           "&nbsp;&nbsp;&nbsp;&nbsp;5. <i>Saved Trips Dashboard:</i> Past calculations ki list, detailed view, aur PDF download options.", body_style))
+    story.append(Paragraph("• <b>Frontend Controller Files:</b> <code>app.py</code> (Main controller & dynamic page router) aur <code>.streamlit/config.toml</code> (Theme configuration).", bullet_style))
 
-    story.append(Paragraph("B. Smart Travel Cost Calculator Engine (INR Currency)", h2_style))
-    story.append(Paragraph("• <b>45+ Indian Destinations:</b> North, South, East, West aur North-East ke sabhi prominent tourist hubs (Jaipur, Varanasi, Udaipur, Shimla, Manali, Goa, Munnar, Ooty, Gangtok, Ladakh, etc.) covered hain.", bullet_style))
-    story.append(Paragraph("• <b>Multi-Tier Travel Styles:</b> <i>Budget</i> (Hostels/Dhabas), <i>Standard</i> (3-star hotels/popular restaurants/AC cabs), aur <i>Luxury</i> (4/5-star resorts/fine dining/private cabs) me customized calculation hoti hai.", bullet_style))
-    story.append(Paragraph("• <b>Itemized Expense Categorization:</b> Hotel Stay, Food Preferences (North/South Indian, Street Food, Cafe Culture), Inter-City Transit (Flight, Rajdhani/Express Train, Volvo Bus), Local City Commute (Auto, Metro, Full-day Cab), Sightseeing & Entry fees, aur 10% Emergency Safety Buffer.", bullet_style))
-    story.append(Paragraph("• <b>Indian Numbering System:</b> Amounts ko standard Indian format (e.g., Rs. 1,45,200) me cleanly display kiya jata hai.", bullet_style))
+    story.append(Spacer(1, 3))
+    story.append(Paragraph("B. Backend Layer (Logic, Security, Data & AI Intelligence)", h2_style))
+    story.append(Paragraph("Backend screen ke peeche ka saara mathematical calculation, database persistence, cryptographic security aur AI intelligence run karta hai. Yeh 5 core modules me divided hai:", body_style))
 
-    story.append(Paragraph("C. AI Travel Studio & Dynamic Copilot (Google Gemini 3.8 Flash)", h2_style))
-    story.append(Paragraph("• <b>Customized Day-Wise Itinerary:</b> Destination, days, budget tier aur travel mode ko parse karke Gemini 3.8 Flash structured Morning-Afternoon-Evening plan generate karta hai.", bullet_style))
-    story.append(Paragraph("• <b>Dynamic Contextual Copilot:</b> Static jawab dene ke bajaye, AI user ki current trip ke exact context (Origin, Destination, Days, Budget) ko dhyan me rakh kar real-time chat replies deta hai.", bullet_style))
-    story.append(Paragraph("• <b>Packing List & Safety Guidelines:</b> Destination ke season aur terrain ke mutabiq packing essentials aur emergency precautions automatically provide karta hai.", bullet_style))
+    fe_be_table_data = [
+        [Paragraph("Backend Module", table_header_style), Paragraph("Source File", table_header_style), Paragraph("Core Technology", table_header_style), Paragraph("Kaam / Responsibility in Project", table_header_style)],
+        [
+            Paragraph("Calculation Engine", table_cell_bold),
+            Paragraph("src/travel_calculator.py", table_cell_style),
+            Paragraph("Python Core Math", table_cell_style),
+            Paragraph("Lodging, meals, intercity flights/trains, local cabs, aur 10% emergency buffer calculate karta hai. Indian numbering (Rs.) format karta hai.", table_cell_style)
+        ],
+        [
+            Paragraph("Auth & Security", table_cell_bold),
+            Paragraph("src/auth.py", table_cell_style),
+            Paragraph("SQLite3 + hashlib", table_cell_style),
+            Paragraph("Salted SHA-256 password hashing, user registration/login verify karna, aur 6-digit OTP generate/expire karna.", table_cell_style)
+        ],
+        [
+            Paragraph("AI Agent Engine", table_cell_bold),
+            Paragraph("src/ai_agent.py", table_cell_style),
+            Paragraph("Google Gemini 3.8 Flash", table_cell_style),
+            Paragraph("Gemini Cloud API ke sath communicate karta hai; trip context inject karke structured day-wise itinerary aur smart chat responses generate karta hai.", table_cell_style)
+        ],
+        [
+            Paragraph("Email Dispatch", table_cell_bold),
+            Paragraph("src/email_service.py", table_cell_style),
+            Paragraph("Resend REST API", table_cell_style),
+            Paragraph("Transactional email delivery handle karta hai; user ke verified inbox par instant 6-digit OTP deliver karta hai.", table_cell_style)
+        ],
+        [
+            Paragraph("Data Processing", table_cell_bold),
+            Paragraph("src/data.py + CSVs", table_cell_style),
+            Paragraph("Pandas Library", table_cell_style),
+            Paragraph("45+ Indian cities ke hotel rates, local transport rates aur ground distances ko query aur index karta hai.", table_cell_style)
+        ]
+    ]
 
-    story.append(Paragraph("D. Saved Trips & History Dashboard", h2_style))
-    story.append(Paragraph("• Users apne generated budgets aur AI itineraries ko apne profile me Save kar sakte hain aur future me kabhi bhi review ya export kar sakte hain.", bullet_style))
+    t_fe_be = Table(fe_be_table_data, colWidths=[90, 115, 95, 204])
+    t_fe_be.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), C_PRIMARY),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#D1E2D2")),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, C_BG_LIGHT]),
+    ]))
+    story.append(t_fe_be)
+
+    story.append(Spacer(1, 4))
+    story.append(Paragraph("C. Frontend aur Backend Aapas Mein Connect Kaise Hote Hain? (Data Flow)", h2_style))
+    story.append(Paragraph("1. <b>Reactive Event Triggering:</b> Jab user frontend screen (<code>app.py</code>) par koi button click karta hai (e.g. <i>Calculate Costs</i> ya <i>Login</i>), Streamlit synchronous function calls ke zariye backend module (<code>src/</code>) ko execute karta hai.", bullet_style))
+    story.append(Paragraph("2. <b>Session State Persistence:</b> User ka login token, active trip metadata aur AI chat history memory me <code>st.session_state</code> ke zariye maintain rehti hai.", bullet_style))
+    story.append(Paragraph("3. <b>Database & External API Sync:</b> Backend functions SQLite database se credentials/trips fetch karte hain aur external APIs (Google Gemini & Resend) se data process karke wapas frontend screen par dynamically render kar dete hain.", bullet_style))
 
     # ==================== SECTION 3: TECHNOLOGY STACK ====================
     story.append(PageBreak())
@@ -345,19 +409,19 @@ def build_hinglish_pdf(filename: str):
     story.append(Paragraph("Project structure modular aur clean architecture follow karta hai, jisme concerns cleanly separated hain:", body_style))
 
     code_tree = """travel_cost_calculator/
-|-- app.py                     # Main application entry point & page navigation router
+|-- app.py                     # Frontend controller & multi-page navigation router
 |-- requirements.txt           # Python dependencies (streamlit, google-genai, resend, etc.)
 |-- Dockerfile                 # Container setup with dynamic $PORT binding for Render
 |-- .env                       # API keys (GEMINI_API_KEY, RESEND_API_KEY)
 |-- Bharat_Yatra_Synopsis.pdf  # Project formal synopsis in PDF format
 |-- generate_pdf.py            # Automated ReportLab PDF generator script
-|-- src/                       # Backend Source Code
+|-- src/                       # Backend Source Code Modules
 |   |-- auth.py                # User login, signup, SHA-256 hashing & SQLite queries
 |   |-- email_service.py       # Resend REST API integration for email OTP delivery
 |   |-- ai_agent.py            # Gemini 3.8 Flash prompt engineering & dynamic copilot
 |   |-- travel_calculator.py   # Core math calculation engine & INR currency formatter
 |   `-- data.py                # Fallback city master data & transport matrices
-|-- data/                      # Dataset Files
+|-- data/                      # Backend Dataset Files
 |   |-- cities_india.csv       # 45+ cities tier, hotel rates, and daily living costs
 |   `-- ground_transport_rates.csv # Local transport matrices across Indian cities
 `-- tests/                     # Automated Test Suites
@@ -381,18 +445,9 @@ def build_hinglish_pdf(filename: str):
     story.append(Paragraph("8. Viva & Interview Questions Guide (Hinglish Q&A)", h1_style))
     story.append(Paragraph("Examiners aur interviewers dwara puche jane wale top questions aur unke crisp answers:", body_style))
 
-    qa_box_style = ParagraphStyle(
-        'QABox',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=8.5,
-        leading=12,
-        textColor=C_TEXT_DARK
-    )
-
     qa_list = [
-        ("Q1: Is project ka core purpose kya hai?", 
-         "Ans: Ye ek intelligent Indian tourism budget calculator aur AI trip planner hai. User ko ek single screen par realistic travel expenses (hotels, food, transit, cabs) milte hain aur Gemini 3.8 Flash personalized day-wise plan provide karta hai."),
+        ("Q1: Is project ka Frontend aur Backend alag kaise hai?", 
+         "Ans: Frontend Streamlit aur custom CSS par based hai jo interactive UI, forms aur AI chat render karta hai. Backend Python modules par bana hai: calculation ke liye travel_calculator.py, SQLite database aur SHA-256 hashing ke liye auth.py, email OTP ke liye Resend API, aur AI generation ke liye Google Gemini 3.8 Flash."),
         ("Q2: Passwords ko database me kaise protect kiya gaya hai?", 
          "Ans: Plain text passwords bilkul store nahi hote. Har user ke liye unique cryptographic salt generate hota hai aur SHA-256 algorithm se hash karke SQLite me store kiya jata hai."),
         ("Q3: Forgot Password me OTP kaise dispatch hota hai?", 
@@ -400,17 +455,16 @@ def build_hinglish_pdf(filename: str):
         ("Q4: Gemini 3.8 Flash model kyun use kiya gaya?", 
          "Ans: Gemini 3.8 Flash ultra-fast inference speed deta hai jisse user ko bina kisi delay ke instant structured itinerary aur dynamic answers mil jate hain."),
         ("Q5: Render cloud deployment me kya challenge aaya tha?", 
-         "Ans: Cloud platforms fixed port 8501 allow nahi karte. Humne Docker entrypoint me dynamic shell expansion `${PORT:-8501}` use karke container ko dynamic port-aware banaya.")
+         "Ans: Cloud platforms fixed port 8501 allow nahi karte. Humne Docker entrypoint me dynamic shell expansion ${PORT:-8501} use karke container ko dynamic port-aware banaya.")
     ]
 
     for q, a in qa_list:
         story.append(Paragraph(f"<b>{q}</b>", h2_style))
         story.append(Paragraph(a, qa_box_style))
-        story.append(Spacer(1, 2))
 
     # Build Document
     doc.build(story, canvasmaker=NumberedCanvas)
-    print(f"Hinglish PDF successfully generated: {filename}")
+    print(f"Hinglish PDF with Frontend/Backend successfully generated: {filename}")
 
 
 if __name__ == "__main__":
